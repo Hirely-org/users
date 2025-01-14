@@ -27,7 +27,7 @@ router.post('/auth', (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
-  
+    console.log('Token:', token);
     // Validate the token
     jwt.verify(token, 'your-secret-key', (err, decoded) => {
       if (err) {

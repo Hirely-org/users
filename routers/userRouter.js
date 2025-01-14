@@ -22,22 +22,23 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/auth', (req, res) => {
-    const token = req.headers['authorization'];
+  // Extract token without the 'Bearer ' prefix
+  const token = req.headers['authorization']?.split(' ')[1];  // Split to get the token part after "Bearer"
   
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  // Validate the token
+  jwt.verify(token, 'your-secret-key', (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid token' });
     }
-    console.log('Token:', token);
-    // Validate the token
-    jwt.verify(token, 'your-secret-key', (err, decoded) => {
-      if (err) {
-        return res.status(403).json({ message: 'Invalid token' });
-      }
-  
-      // If token is valid, forward user info in response headers
-      res.setHeader('X-Forwarded-User', decoded.user);
-      return res.status(200).json({ message: 'Token valid' });
-    });
+
+    // If token is valid, forward user info in response headers
+    res.setHeader('X-Forwarded-User', decoded.user);
+    return res.status(200).json({ message: 'Token valid' });
   });
+});
 
 module.exports = router;

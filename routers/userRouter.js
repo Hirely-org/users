@@ -21,7 +21,7 @@ router.get('/:id', async (req, res) => {
     return res.json(user);
 });
 
-app.post('/auth', (req, res) => {
+router.post('/auth', (req, res) => {
     const token = req.headers['authorization'];
   
     if (!token) {

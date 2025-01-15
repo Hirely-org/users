@@ -9,7 +9,7 @@ const userRouter = require('./routers/userRouter');
 
 app.use(cors());
 app.use(express.json());
-app.use("/user", userRouter);
+app.use("/users", userRouter);
 
 (async () => {
     try {

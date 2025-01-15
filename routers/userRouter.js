@@ -6,6 +6,7 @@ const jwksClient = require('jwks-rsa');
 
 router.get('/', async (req, res) => {
     const users = "Hello World";
+    console.log(req.headers);
     return res.json(users);
 });
 

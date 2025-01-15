@@ -52,7 +52,7 @@ router.get('/auth', (req, res) => {
 
     // If token is valid, forward user info in response headers
     console.log(decoded);
-    res.setHeader('X-Forwarded-User', decoded.user);
+    res.setHeader('X-Forwarded-User', decoded.sub);
     return res.status(200).json({ message: 'Token valid' });
   });
 });

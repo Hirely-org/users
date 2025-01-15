@@ -51,7 +51,8 @@ router.post('/auth', (req, res) => {
     }
 
     // If token is valid, forward user info in response headers
-    // res.setHeader('X-Forwarded-User', decoded.user);
+    console.log(decoded);
+    res.setHeader('X-Forwarded-User', decoded.user);
     return res.status(200).json({ message: 'Token valid' });
   });
 });

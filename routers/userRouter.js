@@ -37,7 +37,7 @@ const getKey = (header, callback) => {
   });
 };
 
-router.post('/auth', (req, res) => {
+router.get('/auth', (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1]; // Extract token
 
   if (!token) {

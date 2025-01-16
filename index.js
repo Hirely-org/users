@@ -14,7 +14,7 @@ app.use("/users", userRouter);
 (async () => {
     try {
         // Sync the database and start the Express server
-        // await db.sequelize.sync();
+        await db.sequelize.sync();
         app.listen(port, () => {
             console.log(`Example app listening on port ${port}`);
         });

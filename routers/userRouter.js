@@ -10,17 +10,17 @@ router.get('/', async (req, res) => {
     return res.json(users);
 });
 
-router.get('/:id', async (req, res) => {
-    let user;
-    try{
-        user = await db.Users.findByPk(req.params.id);
-    } catch(error){
-        console.error('Error getting user:', error);
-        return res.status(500).send('Error getting user');
-    }
-    console.log('User:', user);
-    return res.json(user);
-});
+// router.get('/:id', async (req, res) => {
+//     let user;
+//     try{
+//         user = await db.Users.findByPk(req.params.id);
+//     } catch(error){
+//         console.error('Error getting user:', error);
+//         return res.status(500).send('Error getting user');
+//     }
+//     console.log('User:', user);
+//     return res.json(user);
+// });
 
 const client = jwksClient({
   jwksUri: 'https://hirely-dev.eu.auth0.com/.well-known/jwks.json',

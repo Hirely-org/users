@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     let user;
     try{
-        user = await db.User.findByPk(req.params.id);
+        user = await db.Users.findByPk(req.params.id);
     } catch(error){
         console.error('Error getting user:', error);
         return res.status(500).send('Error getting user');
@@ -64,10 +64,10 @@ router.get('/auth', async (req, res) => {
     }
 
     // Check if the user already exists in the database
-    let user = await db.User.findOne({ where: { sub: decoded.sub } });
+    let user = await db.Users.findOne({ where: { sub: decoded.sub } });
     if (!user) {
       // Create user if not found
-      user = await db.User.create({
+      user = await db.Users.create({
         name: decoded.given_name,
         lastName: decoded.family_name,
         email: decoded.email,
@@ -80,10 +80,10 @@ router.get('/auth', async (req, res) => {
       console.log('User already exists:', user.sub);
     }
 
-    let userRole = await db.Role.findOne({ where: { userId: user.id } });
+    let userRole = await db.Roles.findOne({ where: { userId: user.id } });
     
     if (!userRole) {
-      userRole = await db.Role.create({
+      userRole = await db.Roles.create({
         name: 'applicant',
         userId: user.sub,
         createdAt: new Date(),
@@ -113,12 +113,12 @@ router.get('/auth', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     let user;
     try{
-        user = await db.User.findByPk(req.params.id);
+        user = await db.Users.findByPk(req.params.id);
         if(!user){
             return res.status(404).send('User not found');
         }
         await user.destroy();
-    } catch(error){
+    } catch(error){Users
         console.error('Error deleting user:', error);
         return res.status(500).send('Error deleting user');
     }
@@ -138,7 +138,7 @@ router.get('/user/data', async (req, res) => {
     }
 
     try {
-      const userData = await db.User.findOne({ where: { sub: decoded.sub } });
+      const userData = await db.Users.findOne({ where: { sub: decoded.sub } });
       if (!userData) {
         return res.status(404).json({ message: 'User not found' });
       }
@@ -164,7 +164,7 @@ router.delete('/user/delete', async (req, res) => {
     }
 
     try {
-      await db.User.destroy({ where: { sub: decoded.sub } });
+      await db.Users.destroy({ where: { sub: decoded.sub } });
       await deleteUserFromAuth0(decoded.sub);
       return res.status(200).json({ message: 'User data deleted successfully' });
     } catch (error) {

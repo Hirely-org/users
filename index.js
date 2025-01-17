@@ -7,16 +7,7 @@ const port = 5002;
 
 const userRouter = require('./routers/userRouter');
 
-app.use(cors({
-    origin: true, // Allow all origins
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: '*',
-    credentials: true,
-    preflightContinue: false
-  }));
-  
-  // Explicitly handle OPTIONS
-  app.options('*', cors());
+app.use(cors());
 app.use(express.json());
 app.use("/users", userRouter);
 

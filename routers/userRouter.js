@@ -72,6 +72,7 @@ router.get('/auth', async (req, res) => {
         lastName: decoded.family_name,
         email: decoded.email,
         sub: decoded.sub,
+        role: 'applicant',
         picture: decoded.picture,
         createdAt: new Date(),
       });
@@ -80,7 +81,7 @@ router.get('/auth', async (req, res) => {
       console.log('User already exists:', user.sub);
     }
 
-    let userRole = await db.Roles.findOne({ where: { userId: user.id } });
+    let userRole = await db.Roles.findOne({ where: { userId: user.sub } });
     
     if (!userRole) {
       userRole = await db.Roles.create({

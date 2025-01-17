@@ -80,6 +80,7 @@ router.get('/auth', async (req, res) => {
       console.log('User created:', user);
     } else {
       userRole = await db.Roles.findOne({ where: { id: user.role } });
+      console.log('User Role:', userRole);
       console.log('User already exists:', user.sub);
     }
 

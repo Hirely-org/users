@@ -5,9 +5,13 @@ const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 
 router.get('/', async (req, res) => {
-    const users = "Hello World";
-    console.log(req);
+  try{  
+    const users = await db.Users.findAll();
     return res.json(users);
+  } catch(error){
+    console.error('Error getting user:', error);
+    return res.status(500).send('Error getting user');
+  }
 });
 
 // router.get('/:id', async (req, res) => {
@@ -46,7 +50,7 @@ router.get('/auth', async (req, res) => {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    console.log('Received Token:', token);
+    // console.log('Received Token:', token);
 
     // Verify the token using RS256 and JWKS public key
     const decoded = await new Promise((resolve, reject) =>
@@ -56,7 +60,7 @@ router.get('/auth', async (req, res) => {
       })
     );
 
-    console.log('Decoded Token:', decoded);
+    // console.log('Decoded Token:', decoded);
 
     // Ensure token contains required fields
     if (!decoded?.sub) {

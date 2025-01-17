@@ -87,9 +87,9 @@ router.get('/auth', async (req, res) => {
     // Set response headers and return success
     res.setHeader('X-Forwarded-User', decoded.sub);
     if(!user){
-      res.setHeader('X-Forwarded-Role', user,role);
+      res.setHeader('X-Forwarded-Role', user.role);
     }else {
-      res.setHeader('X-Forwarded-Role', userRole.name);
+      res.setHeader('X-Forwarded-Role', userRole.dataValues.name);
     }
     return res.status(200).json({ message: 'Authentication successful' });
 

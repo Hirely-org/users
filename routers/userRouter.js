@@ -42,6 +42,8 @@ router.get('/auth', async (req, res) => {
     // Extract token from Authorization header
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
+    console.log('Auth Header:', authHeader);
+    console.log('Token:', token);
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }

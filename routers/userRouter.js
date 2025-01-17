@@ -66,6 +66,7 @@ router.get('/auth', async (req, res) => {
     // Check if the user already exists in the database
     let user = await db.Users.findOne({ where: { sub: decoded.sub } });
     let userRole;
+
     if (!user) {
       // Create user if not found
       user = await db.Users.create({
@@ -80,17 +81,26 @@ router.get('/auth', async (req, res) => {
       console.log('User created:', user);
     } else {
       userRole = await db.Roles.findOne({ where: { id: user.role } });
-      console.log('User Role:', userRole.dataValues.name);
+      if (userRole) {
+        console.log('User Role:', userRole.dataValues.name);
+      } else {
+        console.log('Role not found for user:', user.sub);
+      }
       console.log('User already exists:', user.sub);
     }
 
     // Set response headers and return success
     res.setHeader('X-Forwarded-User', decoded.sub);
-    if(!user){
-      res.setHeader('X-Forwarded-Role', user.role);
-    }else {
+
+    // Set the role in the header if the user exists or was created
+    if (userRole && userRole.dataValues.name) {
       res.setHeader('X-Forwarded-Role', userRole.dataValues.name);
+    } else {
+      // Fallback if no role is found or set, like for a newly created user
+      res.setHeader('X-Forwarded-Role', user.role);
     }
+
+
     return res.status(200).json({ message: 'Authentication successful' });
 
   } catch (error) {

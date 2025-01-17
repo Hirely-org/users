@@ -94,7 +94,7 @@ router.get('/auth', async (req, res) => {
 
     // Set the role in the header if the user exists or was created
     if (userRole && userRole.dataValues.name) {
-      res.setHeader('X-Forwarded-Role', userRole.dataValues.name);
+      res.setHeader('X-Forwarded-Role', userRole.dataValues.name.toString());
     } else {
       // Fallback if no role is found or set, like for a newly created user
       res.setHeader('X-Forwarded-Role', user.role);

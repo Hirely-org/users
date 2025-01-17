@@ -65,6 +65,7 @@ router.get('/auth', async (req, res) => {
 
     // Check if the user already exists in the database
     let user = await db.Users.findOne({ where: { sub: decoded.sub } });
+    let userRole;
     if (!user) {
       // Create user if not found
       user = await db.Users.create({
@@ -72,26 +73,14 @@ router.get('/auth', async (req, res) => {
         lastName: decoded.family_name,
         email: decoded.email,
         sub: decoded.sub,
-        role: 'applicant',
+        role: 2,
         picture: decoded.picture,
         createdAt: new Date(),
       });
       console.log('User created:', user);
     } else {
+      userRole = await db.Roles.findOne({ where: { id: user.role } });
       console.log('User already exists:', user.sub);
-    }
-
-    let userRole = await db.Roles.findOne({ where: { userId: user.sub } });
-    
-    if (!userRole) {
-      userRole = await db.Roles.create({
-        name: 'applicant',
-        userId: user.sub,
-        createdAt: new Date(),
-      });
-      console.log('Role created:', userRole);
-    } else {
-      console.log('Role already exists:', userRole.id);
     }
 
     // Set response headers and return success

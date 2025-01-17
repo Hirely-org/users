@@ -95,6 +95,7 @@ router.get('/auth', async (req, res) => {
 
     // Set response headers and return success
     res.setHeader('X-Forwarded-User', decoded.sub);
+    res.setHeader('Access-Control-Expose-Headers', 'X-Forwarded-Role, X-Forwarded-User');
 
     // Set the role in the header if the user exists or was created
     if (userRole && userRole.dataValues.name) {

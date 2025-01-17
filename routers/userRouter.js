@@ -42,8 +42,6 @@ router.get('/auth', async (req, res) => {
     // Extract token from Authorization header
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
-    console.log('Auth Header:', authHeader);
-    console.log('Token:', token);
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
@@ -82,13 +80,17 @@ router.get('/auth', async (req, res) => {
       console.log('User created:', user);
     } else {
       userRole = await db.Roles.findOne({ where: { id: user.role } });
-      console.log('User Role:', userRole);
+      console.log('User Role:', userRole.dataValues.name);
       console.log('User already exists:', user.sub);
     }
 
     // Set response headers and return success
     res.setHeader('X-Forwarded-User', decoded.sub);
-    res.setHeader('X-Forwarded-Role', userRole.name);
+    if(!user){
+      res.setHeader('X-Forwarded-Role', user,role);
+    }else {
+      res.setHeader('X-Forwarded-Role', userRole.name);
+    }
     return res.status(200).json({ message: 'Authentication successful' });
 
   } catch (error) {

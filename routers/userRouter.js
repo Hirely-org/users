@@ -155,7 +155,9 @@ router.delete('/user/delete', async (req, res) => {
 });
 
 router.get('/me', async (req, res) => {
+  console.log('Getting user data');
   try {
+    console.log('Headers:', req.headers);
     const userSub = req.headers['x-forwarded-user'];
     console.log('User sub:', userSub);
     if (!userSub) {

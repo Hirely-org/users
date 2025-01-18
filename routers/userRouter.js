@@ -154,27 +154,34 @@ router.delete('/user/delete', async (req, res) => {
   });
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/me', async (req, res) => {
   try {
-      const user = await db.Users.findByPk(req.params.id, {
-          attributes: ['id', 'name', 'lastName', 'email', 'picture', 'createdAt'], // Fields from Users table
-          include: [
-              {
-                  model: db.Roles,
-                  as: 'role',  // Alias we defined in associations
-                  attributes: ['name'] // Only get the role name
-                }
-          ]
-      });
+    const userSub = req.headers['x-forwarded-user'];
+    console.log('User sub:', userSub);
+    if (!userSub) {
+      return res.status(401).json({ message: 'No user sub provided in header' });
+    }
 
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
+    const user = await db.Users.findOne({
+      where: { sub: userSub },
+      attributes: ['id', 'name', 'lastName', 'email', 'picture', 'createdAt'],
+      include: [
+        {
+          model: db.Roles,
+          as: 'role',
+          attributes: ['name']
+        }
+      ]
+    });
 
-      return res.json(user);
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      return res.status(500).json({ message: 'Error fetching user' });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return res.status(500).json({ message: 'Error fetching user' });
   }
 });
 

@@ -31,16 +31,12 @@ const getKey = (header, callback) => {
 
 router.get('/auth', async (req, res) => {
   try {
-    // Extract token from Authorization header
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    // console.log('Received Token:', token);
-
-    // Verify the token using RS256 and JWKS public key
     const decoded = await new Promise((resolve, reject) =>
       jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err, decoded) => {
         if (err) return reject(err);
@@ -48,62 +44,63 @@ router.get('/auth', async (req, res) => {
       })
     );
 
-    // console.log('Decoded Token:', decoded);
-
-    // Ensure token contains required fields
     if (!decoded?.sub) {
       return res.status(403).json({ message: 'Invalid token: Missing sub' });
     }
 
-    // Check if the user already exists in the database
-    let user = await db.Users.findOne({ where: { sub: decoded.sub } });
-    let userRole;
+    // Find user with role association to avoid extra query
+    let user = await db.Users.findOne({ 
+      where: { sub: decoded.sub },
+      include: [{
+        model: db.Roles,
+        as: 'role'  // Make sure this matches your association alias
+      }]
+    });
 
     if (!user) {
-      // Create user if not found
+      // Create user with roleId: 2 for new users
       user = await db.Users.create({
         name: decoded.given_name,
         lastName: decoded.family_name,
         email: decoded.email,
         sub: decoded.sub,
-        roleId: 2,
+        roleId: 2, // Make sure this matches your column name
         picture: decoded.picture,
-        createdAt: new Date(),
+        createdAt: new Date()
       });
-      console.log('User created:', user);
-    } else {
-      userRole = await db.Roles.findOne({ where: { id: user.role } });
-      if (userRole) {
-        console.log('User Role:', userRole.dataValues.name);
-      } else {
-        console.log('Role not found for user:', user.sub);
-      }
-      console.log('User already exists:', user.sub);
+      
+      // After creation, fetch the user with role information
+      user = await db.Users.findOne({
+        where: { sub: decoded.sub },
+        include: [{
+          model: db.Roles,
+          as: 'role'
+        }]
+      });
     }
 
-    // Set response headers and return success
+    // Set headers
     res.setHeader('X-Forwarded-User', decoded.sub);
     res.setHeader('Access-Control-Expose-Headers', 'X-Forwarded-Role, X-Forwarded-User');
+    
+    // Set role header - now we can always use the role association
+    const roleName = user.role?.name || 'user'; // Default to 'user' if role not found
+    res.setHeader('X-Forwarded-Role', roleName);
 
-    // Set the role in the header if the user exists or was created
-    if (userRole && userRole.dataValues.name) {
-      res.setHeader('X-Forwarded-Role', userRole.dataValues.name.toString());
-    } else {
-      // Fallback if no role is found or set, like for a newly created user
-      res.setHeader('X-Forwarded-Role', user.role);
-    }
-
-
-    return res.status(200).json({ message: 'Authentication successful' });
+    return res.status(200).json({ 
+      message: 'Authentication successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        role: roleName
+      }
+    });
 
   } catch (error) {
     console.error('Authentication error:', error);
-
-    // Handle token errors and database errors separately
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-
     return res.status(500).json({ message: 'Internal server error' });
   }
 });

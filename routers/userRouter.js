@@ -14,31 +14,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-  try {
-      const user = await db.Users.findByPk(req.params.id, {
-          attributes: ['id', 'name', 'lastName', 'email', 'picture', 'createdAt'], // Fields from Users table
-          include: [
-              {
-                  model: db.Roles,
-                  as: 'role',  // Alias we defined in associations
-                  attributes: ['name'] // Only get the role name
-              }
-          ]
-      });
-
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
-
-      return res.json(user);
-  } catch (error) {
-      console.error('Error fetching user:', error);
-      return res.status(500).json({ message: 'Error fetching user' });
-  }
-});
-
-
 const client = jwksClient({
   jwksUri: 'https://hirely-dev.eu.auth0.com/.well-known/jwks.json',
 });
@@ -133,21 +108,6 @@ router.get('/auth', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
-    let user;
-    try{
-        user = await db.Users.findByPk(req.params.id);
-        if(!user){
-            return res.status(404).send('User not found');
-        }
-        await user.destroy();
-    } catch(error){Users
-        console.error('Error deleting user:', error);
-        return res.status(500).send('Error deleting user');
-    }
-    console.log('Deleted user:', user.name);
-    return res.send('User deleted');
-});
 
 router.get('/user/data', async (req, res) => {
   const token = req.headers['authorization']?.split(' ')[1];
@@ -165,7 +125,7 @@ router.get('/user/data', async (req, res) => {
       if (!userData) {
         return res.status(404).json({ message: 'User not found' });
       }
-
+      
 
       return res.status(200).json({ userData });
     } catch (error) {
@@ -197,6 +157,44 @@ router.delete('/user/delete', async (req, res) => {
   });
 });
 
+router.get('/:id', async (req, res) => {
+  try {
+      const user = await db.Users.findByPk(req.params.id, {
+          attributes: ['id', 'name', 'lastName', 'email', 'picture', 'createdAt'], // Fields from Users table
+          include: [
+              {
+                  model: db.Roles,
+                  as: 'role',  // Alias we defined in associations
+                  attributes: ['name'] // Only get the role name
+                }
+          ]
+      });
 
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      return res.json(user);
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      return res.status(500).json({ message: 'Error fetching user' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+    let user;
+    try{
+        user = await db.Users.findByPk(req.params.id);
+        if(!user){
+            return res.status(404).send('User not found');
+        }
+        await user.destroy();
+    } catch(error){Users
+        console.error('Error deleting user:', error);
+        return res.status(500).send('Error deleting user');
+    }
+    console.log('Deleted user:', user.name);
+    return res.send('User deleted');
+});
 
 module.exports = router;

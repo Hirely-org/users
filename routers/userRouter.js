@@ -155,17 +155,24 @@ router.delete('/user/delete', async (req, res) => {
 });
 
 router.get('/me', async (req, res) => {
-  console.log('Getting user data');
   try {
-    console.log('Headers:', req.headers);
     const userSub = req.headers['x-forwarded-user'];
-    console.log('User sub:', userSub);
+    console.log('Attempting to find user with sub:', userSub);
+    console.log('Type of sub:', typeof userSub);
+    console.log('Length of sub:', userSub?.length);
+    console.log('Raw headers:', req.headers);
+
     if (!userSub) {
       return res.status(401).json({ message: 'No user sub provided in header' });
     }
 
+    // Let's try to find with exact string comparison
     const user = await db.Users.findOne({
-      where: { sub: userSub },
+      where: { 
+        sub: {
+          [db.Sequelize.Op.eq]: userSub
+        }
+      },
       attributes: ['id', 'name', 'lastName', 'email', 'picture', 'createdAt'],
       include: [
         {
@@ -173,11 +180,22 @@ router.get('/me', async (req, res) => {
           as: 'role',
           attributes: ['name']
         }
-      ]
+      ],
+      logging: console.log // This will log the exact SQL query
     });
 
+    console.log('Found user:', user);
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      // Return more debug info
+      return res.status(404).json({ 
+        message: 'User not found', 
+        debug: {
+          providedSub: userSub,
+          subLength: userSub?.length,
+          subType: typeof userSub
+        }
+      });
     }
 
     return res.json(user);

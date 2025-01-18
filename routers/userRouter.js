@@ -66,7 +66,7 @@ router.get('/auth', async (req, res) => {
         lastName: decoded.family_name,
         email: decoded.email,
         sub: decoded.sub,
-        role: 2,
+        roleId: 2,
         picture: decoded.picture,
         createdAt: new Date(),
       });

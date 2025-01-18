@@ -1,6 +1,8 @@
+// index.js
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
+const userDeletionService = require('./services/userDeletionService');
 
 const app = express();
 const port = 5002;
@@ -13,8 +15,12 @@ app.use("/users", userRouter);
 
 (async () => {
     try {
+        // Initialize RabbitMQ and services
+        await userDeletionService.initialize();
+        
         // Sync the database and start the Express server
         await db.sequelize.sync();
+        
         app.listen(port, () => {
             console.log(`Example app listening on port ${port}`);
         });

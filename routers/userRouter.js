@@ -3,6 +3,7 @@ const RabbitMQService = require('../rabbitMQService');
 const db = require('../models');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
+const MessageTypes = require('../constants/messageTypes');
 
 router.get('/', async (req, res) => {
   try{  
@@ -205,20 +206,36 @@ router.get('/me', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
-    let user;
-    try{
-        user = await db.Users.findByPk(req.params.id);
-        if(!user){
-            return res.status(404).send('User not found');
-        }
-        await user.destroy();
-    } catch(error){Users
-        console.error('Error deleting user:', error);
-        return res.status(500).send('Error deleting user');
-    }
-    console.log('Deleted user:', user.name);
-    return res.send('User deleted');
+router.delete('/', async (req, res) => {
+  const userSub = req.headers['x-forwarded-user'];
+
+  if (!userSub) {
+      return res.status(401).json({ message: 'No user sub provided in header' });
+  }
+
+  try {
+      const sagaId = `delete_${userSub}_${Date.now()}`;
+      
+      // Initiate the deletion saga
+      await rabbitMQ.sendToQueue(rabbitMQ.queues.userDeletion, {
+          type: MessageTypes.DELETE_USER_START,
+          sagaId,
+          userSub
+      });
+
+      // Return accepted response with saga ID
+      return res.status(202).json({
+          message: 'User deletion process started',
+          sagaId
+      });
+
+  } catch (error) {
+      console.error('Error initiating user deletion:', error);
+      return res.status(500).json({
+          message: 'Error starting user deletion process',
+          error: error.message
+      });
+  }
 });
 
 module.exports = router;

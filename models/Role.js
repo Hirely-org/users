@@ -13,10 +13,17 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: false,
         },
-    },
-    {
+    }, {
         timestamps: false,
     });
 
+    // 🔹 Define Association
+    Role.associate = (models) => {
+        Role.hasMany(models.Users, { 
+            foreignKey: 'roleId',  // Matches the foreign key in Users table
+            as: 'users'  // Alias for the relation
+        });
+    };
+
     return Role;
-}
+};

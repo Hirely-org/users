@@ -21,9 +21,13 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        role: {
+        roleId: {  // 🔹 Rename `role` to `roleId` for clarity
             type: DataTypes.INTEGER,
             allowNull: false,
+            references: {
+                model: 'Roles',  // 🔹 Points to the Roles table
+                key: 'id'
+            }
         },
         picture:{
             type: DataTypes.STRING,
@@ -33,7 +37,15 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: false,
         }
-    })
+    });
+
+    // 🔹 Define Association
+    User.associate = (models) => {
+        User.belongsTo(models.Roles, { 
+            foreignKey: 'roleId',  
+            as: 'role'  // Alias for the relation
+        });
+    };
 
     return User;
-}
+};

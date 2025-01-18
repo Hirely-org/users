@@ -14,17 +14,30 @@ router.get('/', async (req, res) => {
   }
 });
 
-// router.get('/:id', async (req, res) => {
-//     let user;
-//     try{
-//         user = await db.Users.findByPk(req.params.id);
-//     } catch(error){
-//         console.error('Error getting user:', error);
-//         return res.status(500).send('Error getting user');
-//     }
-//     console.log('User:', user);
-//     return res.json(user);
-// });
+router.get('/:id', async (req, res) => {
+  try {
+      const user = await db.Users.findByPk(req.params.id, {
+          attributes: ['id', 'name', 'lastName', 'email', 'picture', 'createdAt'], // Fields from Users table
+          include: [
+              {
+                  model: db.Roles,
+                  as: 'role',  // Alias we defined in associations
+                  attributes: ['name'] // Only get the role name
+              }
+          ]
+      });
+
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      return res.json(user);
+  } catch (error) {
+      console.error('Error fetching user:', error);
+      return res.status(500).json({ message: 'Error fetching user' });
+  }
+});
+
 
 const client = jwksClient({
   jwksUri: 'https://hirely-dev.eu.auth0.com/.well-known/jwks.json',

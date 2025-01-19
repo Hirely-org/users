@@ -2,7 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const db = require('./models');
-const userDeletionService = require('./services/userDeletionService');
+const userDeletionService = require('./userDeletionService');
 
 const app = express();
 const port = 5002;

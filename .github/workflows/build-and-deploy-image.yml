@@ -57,26 +57,18 @@ jobs:
           docker build -t ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }} .
           docker tag ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }} ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:latest
 
-      # Run container with the correct port mapping
+      # Run container mapping the internal port 5002 to host port 8000
       - name: Run Docker container
         run: |
-          docker run -d -p 5002:5002 ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
-          sleep 30
+          docker run -d -p 8000:5002 ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
+          sleep 30  # Wait for container to start
 
-      # Add Traefik for local testing (since you use Traefik in your cluster)
-      - name: Setup local Traefik
+      # Simple curl test to verify the API is accessible
+      - name: Test API accessibility
         run: |
-          docker network create web || true
-          docker run -d \
-            --network=web \
-            -p 8000:80 \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            traefik:v2.5 \
-            --api.insecure=true \
-            --providers.docker=true \
-            --providers.docker.exposedbydefault=false
+          curl -v http://localhost:8000/users || true
 
-      # Run ZAP scan targeting the Traefik endpoint
+      # Run ZAP scan
       - name: ZAP Scan
         uses: zaproxy/action-full-scan@v0.9.0
         with:

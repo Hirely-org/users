@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./models');
 const userDeletionService = require('./userDeletionService');
+const rabbitMQService = require('./rabbitMQService');
 
 const app = express();
 const port = 5002;
@@ -16,6 +17,7 @@ app.use("/users", userRouter);
 (async () => {
     try {
         // Initialize RabbitMQ and services
+        await rabbitMQService.connect();
         await userDeletionService.initialize();
         
         // Sync the database and start the Express server

@@ -1,9 +1,9 @@
 const router = require('express').Router();
-const RabbitMQService = require('../rabbitMQService');
 const db = require('../models');
 const jwt = require('jsonwebtoken');
 const jwksClient = require('jwks-rsa');
 const MessageTypes = require('../constants/messageTypes');
+const rabbitMQService = require('../rabbitMQService');
 
 router.get('/', async (req, res) => {
   try{  
@@ -133,35 +133,35 @@ router.get('/user/data', async (req, res) => {
   });
 });
 
-router.delete('/user/delete', async (req, res) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+// router.delete('/user/delete', async (req, res) => {
+//   const token = req.headers['authorization']?.split(' ')[1];
+//   if (!token) {
+//     return res.status(401).json({ message: 'Unauthorized' });
+//   }
 
-  jwt.verify(token, getKey, { algorithms: ['RS256'] }, async (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid token' });
-    }
+//   jwt.verify(token, getKey, { algorithms: ['RS256'] }, async (err, decoded) => {
+//     if (err) {
+//       return res.status(403).json({ message: 'Invalid token' });
+//     }
 
-    try {
-      await db.Users.destroy({ where: { sub: decoded.sub } });
-      await deleteUserFromAuth0(decoded.sub);
-      return res.status(200).json({ message: 'User data deleted successfully' });
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ message: 'Error deleting user data' });
-    }
-  });
-});
+//     try {
+//       await db.Users.destroy({ where: { sub: decoded.sub } });
+//       await deleteUserFromAuth0(decoded.sub);
+//       return res.status(200).json({ message: 'User data deleted successfully' });
+//     } catch (error) {
+//       console.error(error);
+//       return res.status(500).json({ message: 'Error deleting user data' });
+//     }
+//   });
+// });
 
 router.get('/me', async (req, res) => {
   try {
     const userSub = req.headers['x-forwarded-user'];
-    console.log('Attempting to find user with sub:', userSub);
-    console.log('Type of sub:', typeof userSub);
-    console.log('Length of sub:', userSub?.length);
-    console.log('Raw headers:', req.headers);
+    // console.log('Attempting to find user with sub:', userSub);
+    // console.log('Type of sub:', typeof userSub);
+    // console.log('Length of sub:', userSub?.length);
+    // console.log('Raw headers:', req.headers);
 
     if (!userSub) {
       return res.status(401).json({ message: 'No user sub provided in header' });
@@ -214,6 +214,8 @@ router.delete('/', async (req, res) => {
   }
 
   try {
+      await rabbitMQService.connect();
+
       const sagaId = `delete_${userSub}_${Date.now()}`;
       
       // Initiate the deletion saga

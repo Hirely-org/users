@@ -9,7 +9,7 @@ class RabbitMQService {
         this.queues = {
             userDeletion: 'user_deletion_queue',
             userDeletionResponse: 'user_deletion_response_queue',
-            rollback: 'rollback_queue'
+            jobApplicationResponse: 'job_application_response_queue'
         };
     }
 

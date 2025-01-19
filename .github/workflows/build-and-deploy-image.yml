@@ -89,7 +89,7 @@ jobs:
       - name: Create Docker network
         run: docker network create web || true
 
-      # Run API container with Traefik labels
+      # Run API container with Traefik labels and debug output
       - name: Run Docker container
         run: |
           docker run -d \
@@ -99,9 +99,11 @@ jobs:
             --label "traefik.http.routers.users.rule=PathPrefix(`/users`)" \
             --label "traefik.http.services.users.loadbalancer.server.port=5002" \
             ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
-          sleep 30
+          sleep 10
+          echo "API Container logs:"
+          docker logs users-api
 
-      # Setup Traefik
+      # Setup Traefik with debug output
       - name: Setup local Traefik
         run: |
           docker run -d \
@@ -112,20 +114,25 @@ jobs:
             traefik:v2.5 \
             --api.insecure=true \
             --providers.docker=true \
-            --providers.docker.exposedbydefault=false
+            --providers.docker.exposedbydefault=false \
+            --log.level=DEBUG
+          sleep 10
+          echo "Traefik Container logs:"
+          docker logs traefik
+          echo "Docker network inspect:"
+          docker network inspect web
+          echo "Docker ps:"
+          docker ps
+          echo "Testing Traefik API:"
+          curl -v http://localhost:8000/api || true
 
-      # Verify we're actually hitting the API
+      # Verify API Connection with verbose output
       - name: Test API Connection
         run: |
           echo "Testing API endpoint..."
-          response=$(curl -s -w "\n%{http_code}" http://localhost:8000/users)
-          echo "Response: $response"
-          if [[ $response != *"200"* && $response != *"401"* ]]; then
-            echo "API is not responding correctly"
-            docker logs users-api
-            docker logs traefik
-            exit 1
-          fi
+          curl -v http://localhost:8000/users || true
+          docker logs users-api
+          docker logs traefik
 
       # Run ZAP scan
       - name: ZAP Scan

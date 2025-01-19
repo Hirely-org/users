@@ -1,4 +1,3 @@
-// services/rabbitMQService.js
 const amqplib = require('amqplib');
 const rabbitMQURI = require('./config');
 
@@ -32,13 +31,16 @@ class RabbitMQService {
     async consumeQueue(queue, callback) {
         await this.channel.assertQueue(queue, { durable: true });
         this.channel.consume(queue, async (msg) => {
-            try {
-                await callback(JSON.parse(msg.content.toString()));
-                this.channel.ack(msg);
-            } catch (error) {
-                console.error('Error processing message:', error);
-                // Nack the message to retry
-                this.channel.nack(msg);
+            if (msg) {
+                try {
+                    const message = JSON.parse(msg.content.toString());
+                    console.log(`Received message in ${queue}:`, message);  // Add this log
+                    await callback(message);
+                    this.channel.ack(msg);
+                } catch (error) {
+                    console.error('Error processing message:', error);
+                    this.channel.nack(msg);
+                }
             }
         });
         console.log(`[*] Waiting for messages in ${queue}`);
@@ -46,9 +48,11 @@ class RabbitMQService {
 
     async sendToQueue(queue, message) {
         await this.channel.assertQueue(queue, { durable: true });
-        return this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {
+        const success = this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {
             persistent: true
         });
+        console.log(`[x] Sent message to ${queue}:`, message);  // Add this log
+        return success;
     }
 }
 

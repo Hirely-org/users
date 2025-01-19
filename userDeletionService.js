@@ -11,8 +11,11 @@ class UserDeletionService {
     async initialize() {
         await rabbitMQ.connect();
         
+        console.log('Initializing user deletion service...'); // Add this log
+        
         // Listen for deletion commands
         await rabbitMQ.consumeQueue(rabbitMQ.queues.userDeletion, async (message) => {
+            console.log('Received delete user message:', message); // Add this log
             if (message.type === MessageTypes.DELETE_USER_START) {
                 await this.handleDeleteUser(message);
             }
@@ -20,6 +23,7 @@ class UserDeletionService {
 
         // Listen for rollback commands
         await rabbitMQ.consumeQueue(rabbitMQ.queues.rollback, async (message) => {
+            console.log('Received rollback message:', message); // Add this log
             if (message.type === MessageTypes.ROLLBACK_DELETE_USER) {
                 await this.handleRollback(message);
             }

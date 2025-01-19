@@ -1,3 +1,66 @@
+# name: Build, Scan and Push Docker Image
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build-scan-and-push:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Get short SHA
+#         uses: benjlevesque/short-sha@v3.0
+#         id: short-sha
+
+#       - name: Build Docker Image
+#         run: |
+#           docker build -t ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }} .
+#           docker tag ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }} ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:latest
+
+#       # Run container with the correct port mapping
+#       - name: Run Docker container
+#         run: |
+#           docker run -d -p 5002:5002 ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
+#           sleep 30
+
+#       # Add Traefik for local testing (since you use Traefik in your cluster)
+#       - name: Setup local Traefik
+#         run: |
+#           docker network create web || true
+#           docker run -d \
+#             --network=web \
+#             -p 8000:80 \
+#             -v /var/run/docker.sock:/var/run/docker.sock \
+#             traefik:v2.5 \
+#             --api.insecure=true \
+#             --providers.docker=true \
+#             --providers.docker.exposedbydefault=false
+
+#       # Run ZAP scan targeting the Traefik endpoint
+#       - name: ZAP Scan
+#         uses: zaproxy/action-full-scan@v0.9.0
+#         with:
+#           target: 'http://localhost:8000/users'
+#           allow_issue_writing: false
+#           fail_action: true
+#           cmd_options: '-a'
+
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ vars.DOCKERHUB_NAME }}
+#           password: ${{ secrets.DOCKERHUB_PASS }}
+
+#       - name: Push Docker Image
+#         run: |
+#           docker push ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
+#           docker push ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:latest
+
 name: Build, Scan and Push Docker Image
 
 on:
@@ -22,18 +85,28 @@ jobs:
           docker build -t ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }} .
           docker tag ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }} ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:latest
 
-      # Run container with the correct port mapping
+      # Create network first
+      - name: Create Docker network
+        run: docker network create web || true
+
+      # Run API container with Traefik labels
       - name: Run Docker container
         run: |
-          docker run -d -p 5002:5002 ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
-          sleep 30
-
-      # Add Traefik for local testing (since you use Traefik in your cluster)
-      - name: Setup local Traefik
-        run: |
-          docker network create web || true
           docker run -d \
             --network=web \
+            --name users-api \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.users.rule=PathPrefix(`/users`)" \
+            --label "traefik.http.services.users.loadbalancer.server.port=5002" \
+            ${{ vars.DOCKERHUB_IMAGE_NAME }}/${{ vars.DOCKERHUB_IMG_PREFIX }}-users-api:${{ steps.short-sha.outputs.sha }}
+          sleep 30
+
+      # Setup Traefik
+      - name: Setup local Traefik
+        run: |
+          docker run -d \
+            --network=web \
+            --name traefik \
             -p 8000:80 \
             -v /var/run/docker.sock:/var/run/docker.sock \
             traefik:v2.5 \
@@ -41,7 +114,20 @@ jobs:
             --providers.docker=true \
             --providers.docker.exposedbydefault=false
 
-      # Run ZAP scan targeting the Traefik endpoint
+      # Verify we're actually hitting the API
+      - name: Test API Connection
+        run: |
+          echo "Testing API endpoint..."
+          response=$(curl -s -w "\n%{http_code}" http://localhost:8000/users)
+          echo "Response: $response"
+          if [[ $response != *"200"* && $response != *"401"* ]]; then
+            echo "API is not responding correctly"
+            docker logs users-api
+            docker logs traefik
+            exit 1
+          fi
+
+      # Run ZAP scan
       - name: ZAP Scan
         uses: zaproxy/action-full-scan@v0.9.0
         with:

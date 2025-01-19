@@ -35,7 +35,10 @@ class UserDeletionService {
         
         try {
             // 1. Find the user
-            const user = await db.Users.findByPk(userSub);
+            const user = await db.Users.findOne({
+                where: { sub: userSub }
+            });
+            
             if (!user) {
                 throw new Error('User not found');
             }

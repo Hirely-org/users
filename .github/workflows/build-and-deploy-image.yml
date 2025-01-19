@@ -70,7 +70,7 @@ jobs:
       - name: ZAP Scan
         uses: zaproxy/action-full-scan@v0.9.0
         with:
-          target: 'http://localhost:8000'  # Adjust the port according to your application
+          target: 'http://localhost:8000/users'  # Adjust the port according to your application
           allow_issue_writing: false
           fail_action: true  # Will fail the build if any alerts are found
           cmd_options: '-a'  # Additional ZAP options if needed

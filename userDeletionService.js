@@ -2,10 +2,12 @@
 const db = require('./models');
 const rabbitMQ = require('./rabbitMQService');
 const MessageTypes = require('./constants/messageTypes');
+const { deleteUserFromAuth0 } = require('./utils/utils');
 
 class UserDeletionService {
     constructor() {
         this.deletedUsers = new Map(); // Store deleted user data for potential rollback
+        this.auth0DeletedUsers = new Map(); // Store deleted user data for potential rollback
     }
 
     async initialize() {
@@ -34,6 +36,13 @@ class UserDeletionService {
         const { userSub, sagaId } = message;
         
         try {
+            try {
+                await deleteUserFromAuth0(userSub);
+                this.auth0DeletedUsers.set(sagaId, true); // Mark that we deleted from Auth0
+            } catch (error) {
+                console.error('Failed to delete user from Auth0:', error);
+                throw new Error('Auth0 deletion failed');
+            }
             // 1. Find the user
             const user = await db.Users.findOne({
                 where: { sub: userSub }

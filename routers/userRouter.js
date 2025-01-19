@@ -214,12 +214,11 @@ router.delete('/', async (req, res) => {
   }
 
   try {
-      await rabbitMQService.connect();
 
       const sagaId = `delete_${userSub}_${Date.now()}`;
       
       // Initiate the deletion saga
-      await rabbitMQ.sendToQueue(rabbitMQ.queues.userDeletion, {
+      await rabbitMQService.sendToQueue(rabbitMQService.queues.userDeletion, {
           type: MessageTypes.DELETE_USER_START,
           sagaId,
           userSub

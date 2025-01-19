@@ -1,7 +1,7 @@
 // services/userDeletionService.js
-const db = require('../models');
+const db = require('./models');
 const rabbitMQ = require('./rabbitMQService');
-const MessageTypes = require('../constants/messageTypes');
+const MessageTypes = require('./constants/messageTypes');
 
 class UserDeletionService {
     constructor() {

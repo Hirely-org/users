@@ -1,6 +1,6 @@
 // services/rabbitMQService.js
 const amqplib = require('amqplib');
-const rabbitMQURI = require('../config');
+const rabbitMQURI = require('./config');
 
 class RabbitMQService {
     constructor() {

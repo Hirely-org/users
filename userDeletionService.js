@@ -22,12 +22,12 @@ class UserDeletionService {
         });
 
         // Listen for rollback commands
-        await rabbitMQ.consumeQueue(rabbitMQ.queues.rollback, async (message) => {
-            console.log('Received rollback message:', message); // Add this log
-            if (message.type === MessageTypes.ROLLBACK_DELETE_USER) {
-                await this.handleRollback(message);
+        await rabbitMQ.consumeQueue(rabbitMQ.queues.jobApplicationResponse, async (message) => {
+            if (message.type === MessageTypes.JOB_APPLICATIONS_DELETION_FAILED) {
+                await this.handleRollback(message.sagaId);
             }
         });
+        
     }
 
     async handleDeleteUser(message) {
@@ -67,17 +67,16 @@ class UserDeletionService {
         }
     }
 
-    async handleRollback(message) {
-        const { sagaId } = message;
+    async handleRollback(sagaId) {
         const userData = this.deletedUsers.get(sagaId);
-        
         if (userData) {
             try {
+                // Restore the user data
                 await db.Users.create(userData);
+                console.log(`Successfully restored user data for saga ${sagaId}`);
                 this.deletedUsers.delete(sagaId);
-                console.log(`Successfully rolled back user deletion for saga ${sagaId}`);
             } catch (error) {
-                console.error(`Rollback failed for saga ${sagaId}:`, error);
+                console.error(`Failed to rollback user deletion: ${error}`);
             }
         }
     }

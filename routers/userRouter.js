@@ -43,7 +43,7 @@ router.get('/auth', async (req, res) => {
         if (err) return reject(err);
         resolve(decoded);
       };
-      
+      console.log('Token received:', token);
       jwt.verify(token, async (header, callback) => {
         try {
           const key = await getKey(header);

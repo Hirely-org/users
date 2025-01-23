@@ -1,3 +1,52 @@
+# name: Build and Deploy Users API
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# env:
+#   IMG_NAME: veljkoskrbic/hirely-users-api
+
+# jobs:
+#   build-and-deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Get short SHA
+#         uses: benjlevesque/short-sha@v3.0
+#         id: short-sha
+
+#       - name: Login to Docker Hub
+#         uses: docker/login-action@v3
+#         with:
+#           username: veljkoskrbic
+#           password: ${{secrets.DOCKERHUB_PASS}}
+
+#       - name: Build and Push Docker Image
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: .
+#           push: true
+#           tags: |
+#             ${{env.IMG_NAME}}:${{steps.short-sha.outputs.sha}}
+#             ${{env.IMG_NAME}}:latest
+
+#       - name: Configure AWS Credentials
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+
+#       - name: Deploy to EKS
+#         run: |
+#           aws eks update-kubeconfig --region ${{ vars.AWS_DEFAULT_REGION }} --name ${{ vars.AWS_EKS_CLUSTER_NAME }}
+#           kubectl set image deployment/users-deployment users=${{env.IMG_NAME}}:${{steps.short-sha.outputs.sha}}
+#           kubectl rollout status deployment/users-deployment
+
 name: Build and Deploy Users API
 
 on:
@@ -6,8 +55,9 @@ on:
       - main
 
 env:
-  IMG_NAME: veljkoskrbic/hirely-users-api
-
+  ECR_REGISTRY: 794038224958.dkr.ecr.eu-central-1.amazonaws.com
+  ECR_REPOSITORY: hirely-user
+  
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -19,21 +69,6 @@ jobs:
         uses: benjlevesque/short-sha@v3.0
         id: short-sha
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: veljkoskrbic
-          password: ${{secrets.DOCKERHUB_PASS}}
-
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{env.IMG_NAME}}:${{steps.short-sha.outputs.sha}}
-            ${{env.IMG_NAME}}:latest
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -41,8 +76,21 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_DEFAULT_REGION }}
 
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.short-sha.outputs.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+
       - name: Deploy to EKS
         run: |
           aws eks update-kubeconfig --region ${{ vars.AWS_DEFAULT_REGION }} --name ${{ vars.AWS_EKS_CLUSTER_NAME }}
-          kubectl set image deployment/users-deployment users=${{env.IMG_NAME}}:${{steps.short-sha.outputs.sha}}
+          kubectl set image deployment/users-deployment users=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.short-sha.outputs.sha }}
           kubectl rollout status deployment/users-deployment

@@ -20,13 +20,13 @@ const client = jwksClient({
 });
 
 // Function to get the signing key
-const getKey = (header, callback) => {
-  client.getSigningKey(header.kid, (err, key) => {
-    if (err) {
-      return callback(err, null);
-    }
-    const signingKey = key.publicKey || key.rsaPublicKey;
-    callback(null, signingKey);
+const getKey = async (header) => {
+  return new Promise((resolve, reject) => {
+    client.getSigningKey(header.kid, (err, key) => {
+      if (err) return reject(err);
+      const signingKey = key.publicKey || key.rsaPublicKey;
+      resolve(signingKey);
+    });
   });
 };
 
@@ -38,12 +38,21 @@ router.get('/auth', async (req, res) => {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const decoded = await new Promise((resolve, reject) =>
-      jwt.verify(token, getKey, { algorithms: ['RS256'] }, (err, decoded) => {
+    const decoded = await new Promise((resolve, reject) => {
+      const verifyCallback = (err, decoded) => {
         if (err) return reject(err);
         resolve(decoded);
-      })
-    );
+      };
+      
+      jwt.verify(token, async (header, callback) => {
+        try {
+          const key = await getKey(header);
+          callback(null, key);
+        } catch (err) {
+          callback(err);
+        }
+      }, { algorithms: ['RS256'] }, verifyCallback);
+    });
 
     if (!decoded?.sub) {
       return res.status(403).json({ message: 'Invalid token: Missing sub' });
